@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Label;
 use App\Models\User;
 use App\Models\Company;
 use App\Models\Site;
@@ -32,15 +33,32 @@ class LabelService {
 
     static public function addLabelRelations(array $labels, $entityLabelRelation, $entityId, $entityForeignIdString) {
         foreach ($labels as $label) {
-            $labelId = Label::where('name', '=', $label)->first()->id;
-            $entityLabelRelation->label_id = $labelId;
-            $entityLabelRelation->$entityForeignIdString = $entityId;
-            $entityLabelRelation->save();
+            $labelCollection = Label::where('name', '=', $label)->first();
+			if(is_null($labelCollection)) {
+				$newLabel = new Label();
+				$newLabel->name = $label;
+				$newLabel->save();
+				$labelId = $newLabel->id;
+			}
+			else {
+				$labelId = $labelCollection->id;
+			}
+			$relation = new $entityLabelRelation();
+            $relation->label_id = $labelId;
+            $relation->$entityForeignIdString = $entityId;
+            $relation->save();
         }
     }
 
-    static public function deleteLabelRelations($entityLabelRelation, $entityId, $entityForeignIdString) {
-        $entityLabelRelation::where($entityForeignIdString, '=', $entityId)->destroy();
+    static public function deleteLabelRelations($entityLabelRelation, $entityId, $entityForeignIdString, array $labels) {
+		foreach (Label::select('id')->whereIn('name', $labels)->get() as $ids) {
+			$labelIds [] = $ids['id'];
+		}
+        $entityLabelRelation::whereIn('label_id', $labelIds)->where($entityForeignIdString, '=', $entityId)->delete();
+    }
+	
+	static public function deleteAllLabelRelations($entityLabelRelation, $entityId, $entityForeignIdString, array $labels) {
+        $entityLabelRelation::where($entityForeignIdString, '=', $entityId)->delete();
     }
     
     static public function checkEmptyLabelArray($labels) {
@@ -55,8 +73,11 @@ class LabelService {
         }
     }
     
-    static public function checkLabelsExists(array $labels) {
-        if(Label::select('name')->whereIn('name', $labels)->get()) {
+    static public function checkLabelsExists($entityLabelRelation, $entityForeignIdString, $entityId, array $labels) {
+	    foreach (Label::select('id')->whereIn('name', $labels)->get() as $ids) {
+			$labelIds [] = $ids['id'];
+		}
+        if(count($entityLabelRelation::select('label_id')->distinct('label_id')->whereIn('label_id', $labelIds)->where($entityForeignIdString, '=', $entityId)->distinct()->get()) != count($labelIds)) {
                 throw new Exception("Some label was not found");
         }
     }

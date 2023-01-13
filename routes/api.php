@@ -20,6 +20,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('show', [LabelController::class, 'show']);
-Route::get('add', [LabelController::class, 'add']);
-Route::get('labels', [LabelController::class, 'update']);
-Route::get('labels', [LabelController::class, 'delete']);
+Route::post('add', [LabelController::class, 'add']);
+Route::post('update', [LabelController::class, 'update']);
+Route::post('delete', [LabelController::class, 'delete']);
+

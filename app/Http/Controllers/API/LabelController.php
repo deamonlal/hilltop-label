@@ -18,9 +18,14 @@ class LabelController extends \App\Http\Controllers\Controller
         $entityForeignIdString = $request->entity . '_id';
         $entity = LabelService::identifyEntity($request->entity);
         $entityLabelRelation = LabelService::identifyEntityRelation($request->entity);
+		$entityLabelRelationString = $request->entity . '_labels_relations';
         $entityId = $request->entityId;
         LabelService::checkModelExists($entity, $entityId);
-        return ['labels' => $entityLabelRelation::all()];
+        return ['labels' => $entityLabelRelation::select('labels.name')
+			->join('labels', "$entityLabelRelationString.label_id", '=', 'labels.id')
+			->where("$entityLabelRelationString.$entityForeignIdString", '=', $entityId)
+			->get()
+			];
     }
 
     /**
@@ -38,7 +43,6 @@ class LabelController extends \App\Http\Controllers\Controller
         $labels = $request->labels;
         LabelService::checkEmptyLabelArray($labels);
         LabelService::checkModelExists($entity, $entityId);
-        LabelService::checkLabelsExists($labels);
         LabelService::addLabelRelations($labels, $entityLabelRelation, $entityId, $entityForeignIdString);
         return [
             'code' => 200,
@@ -61,8 +65,8 @@ class LabelController extends \App\Http\Controllers\Controller
         $entityId = $request->entityId;
         $labels = $request->labels;
         LabelService::checkModelExists($entity, $entityId);
-        LabelService::checkLabelsExists($labels);
-        LabelService::deleteLabelRelations($entityLabelRelation, $entityId, $entityForeignIdString);
+        LabelService::checkLabelsExists($entityLabelRelation, $entityForeignIdString, $entityId, $labels);
+        LabelService::deleteAllLabelRelations($entityLabelRelation, $entityId, $entityForeignIdString, $labels);
         LabelService::addLabelRelations($labels, $entityLabelRelation, $entityId, $entityForeignIdString);
         return [
             'code' => 200,
@@ -83,10 +87,12 @@ class LabelController extends \App\Http\Controllers\Controller
         $entityLabelRelation = LabelService::identifyEntityRelation($request->entity);
         $entityId = $request->entityId;
         $labels = $request->labels;
+		
         LabelService::checkEmptyLabelArray($labels);
+		
         LabelService::checkModelExists($entity, $entityId);
-        LabelService::checkLabelsExists($labels);
-        LabelService::deleteLabelRelations($entityLabelRelation, $entityId, $entityForeignIdString);
+        LabelService::checkLabelsExists($entityLabelRelation, $entityForeignIdString, $entityId, $labels);
+        LabelService::deleteLabelRelations($entityLabelRelation, $entityId, $entityForeignIdString, $labels);
         return [
             'code' => 200,
             'message' => "Labels was deleted"
