@@ -3,7 +3,7 @@
 
 Используетя база данных MySQL
 
-##Install
+## Install
 
 Стандартная установка - клонировать проект (git clone), 
 Установить все зависимости (composer install, npm install), 
